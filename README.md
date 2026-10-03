@@ -18,7 +18,7 @@ Static copy of the tracker for GitHub Pages (or any static web host). Snapshot e
 - Change history tab (password protected).
 
 ## What does not
-- "Save changes": a static host can't store edits. Changes made on screen reset on reload. Keep updating the Claude-hosted tracker and export a new copy to refresh this site.
+- Shared saving: "Save changes" stores edits only in the browser that made them (they survive reloads there). Other people and other devices don't see them, and clearing browser data erases them. Keep updating the Claude-hosted tracker and export a new copy to refresh this site; when a new copy is uploaded, each browser's saved edits are replaced by the new copy's data.
 - Viewer names in Change history and the owner-only password change (these need the Claude-hosted version).
 
 ## Privacy
