@@ -1,6 +1,6 @@
 # Brandeis South Campus Residence Hall – Energization & Startup Tracker
 
-Static copy of the tracker for GitHub Pages (or any static web host). Snapshot exported October 2, 2026.
+Static copy of the tracker for GitHub Pages (or any static web host). Snapshot exported October 3, 2026.
 
 ## Contents
 - `index.html` – the tracker (all code and data in one file)
