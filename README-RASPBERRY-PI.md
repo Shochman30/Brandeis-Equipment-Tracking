@@ -29,7 +29,7 @@ SSH) unless it says "on your computer".
 | Official power supply, network cable (or Wi-Fi) | The Pi has to stay on for the site to be up. |
 | A domain name **on Cloudflare** (free plan is fine) | e.g. `example.com`. You'll use `tracker.example.com` and `auth.example.com`. |
 | A computer on the same network | To flash the card, copy the zip and do the first setup. |
-| `brandeis-tracker.zip` | This package. |
+| `brandeis-tracker.zip` (or part1 + part2) | This package. |
 
 ## 2. Prepare the Raspberry Pi
 
@@ -83,10 +83,14 @@ The tunnel shows as "Inactive/Down" until step 9. That's expected.
 
 ## 4. Copy the zip to the Pi and unpack it
 
-**On your computer**, in the folder that has the zip:
+The package comes either as one file, `brandeis-tracker.zip`, or as two parts,
+`brandeis-tracker-part1.zip` and `brandeis-tracker-part2.zip` (part 2 holds the
+rest of the drawings). Copy whichever you have.
+
+**On your computer**, in the folder that has the zip file(s):
 
 ```bash
-scp brandeis-tracker.zip pi@tracker-pi.local:~
+scp brandeis-tracker*.zip pi@tracker-pi.local:~
 ```
 
 (Windows without `scp`: use WinSCP or FileZilla with the same address and login.)
@@ -95,13 +99,15 @@ scp brandeis-tracker.zip pi@tracker-pi.local:~
 
 ```bash
 cd ~
-unzip brandeis-tracker.zip
+for z in brandeis-tracker*.zip; do unzip -o "$z"; done
 cd brandeis-tracker
 ls
+ls *.jpg | wc -l      # should print 68
 ```
 
 You should see `docker-compose.yml`, `Dockerfile`, `index.html`, the `.jpg`
-drawings, `server/`, `authentik/`, `pi-setup.sh` and this guide.
+drawings, `server/`, `authentik/`, `pi-setup.sh` and this guide. If the count
+is not 68, part 2 is missing.
 
 ## 5. Run the setup script
 
@@ -281,11 +287,11 @@ docker compose exec tracker python3 server/app.py seed --force
 
 ### Updating to a new version of this package
 
-Copy the new zip to the Pi as in step 4, then unpack it over the old folder
-(your `.env` and saved data are not in the zip, so they're kept):
+Copy the new zip file(s) to the Pi as in step 4, then unpack over the old
+folder (your `.env` and saved data are not in the zip, so they're kept):
 
 ```bash
-cd ~ && unzip -o brandeis-tracker.zip
+cd ~ && for z in brandeis-tracker*.zip; do unzip -o "$z"; done
 cd brandeis-tracker && docker compose up -d --build
 ```
 
