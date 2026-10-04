@@ -1,0 +1,100 @@
+# Brandeis tracker + Authentik sign-in + Cloudflare tunnel.
+#
+#   internet -> Cloudflare -> cloudflared -> authentik-server:9000
+#     auth.<domain>     Authentik itself (sign-in, admin)
+#     tracker.<domain>  Authentik's built-in proxy, which checks sign-in and
+#                       forwards to tracker:8080 with the user's details
+#
+# No port of the tracker is published: it is only reachable through Authentik.
+# See DEPLOY.md for the step-by-step setup.
+
+services:
+  tracker:
+    build: .
+    image: brandeis-tracker:latest
+    restart: unless-stopped
+    environment:
+      AUTH_MODE: authentik
+      EDITOR_GROUPS: ${EDITOR_GROUPS:-tracker-editors}
+      OWNER_GROUPS: ${OWNER_GROUPS:-tracker-owners,authentik Admins}
+    volumes:
+      - tracker-data:/data
+    networks: [backend]
+
+  postgresql:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB:-authentik}
+      POSTGRES_USER: ${PG_USER:-authentik}
+      POSTGRES_PASSWORD: ${PG_PASS:?set PG_PASS in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - authentik-db:/var/lib/postgresql/data
+    networks: [backend]
+
+  authentik-server:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.8.3}
+    command: server
+    restart: unless-stopped
+    shm_size: 512mb
+    env_file: .env
+    environment: &authentik-env
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?set AUTHENTIK_SECRET_KEY in .env}
+      TRACKER_HOST: ${TRACKER_HOST:?set TRACKER_HOST in .env}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    ports:
+      # Local access for first-time setup and as a fallback if the tunnel is down.
+      # Bound to this machine only; the public way in is the Cloudflare tunnel.
+      - "127.0.0.1:${COMPOSE_PORT_HTTP:-9000}:9000"
+    volumes:
+      - authentik-data:/data
+      - ./authentik/blueprints:/blueprints/custom:ro
+    networks: [backend]
+
+  authentik-worker:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.8.3}
+    command: worker
+    restart: unless-stopped
+    shm_size: 512mb
+    env_file: .env
+    environment: *authentik-env
+    # As in Authentik's own compose file (lets the worker manage /certs).
+    user: root
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    volumes:
+      - authentik-data:/data
+      - authentik-certs:/certs
+      - ./authentik/blueprints:/blueprints/custom:ro
+    networks: [backend]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    restart: unless-stopped
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on: [authentik-server]
+    networks: [backend]
+
+volumes:
+  tracker-data:
+  authentik-db:
+  authentik-data:
+  authentik-certs:
+
+networks:
+  backend:

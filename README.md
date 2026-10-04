@@ -2,6 +2,9 @@
 
 Static copy of the tracker for GitHub Pages (or any static web host). Snapshot exported October 3, 2026.
 
+## Self-hosted version (Linux, Docker, Authentik, Cloudflare tunnel)
+The same tracker can run as a shared web app on your own Linux machine: people sign in with Authentik accounts, saved changes are shared with everyone, and it's published through a Cloudflare tunnel. See **[DEPLOY.md](DEPLOY.md)**. The sections below are about the static GitHub Pages copy.
+
 ## Contents
 - `index.html` – the tracker (all code and data in one file)
 - 68 `.jpg` files – drawings, room plans, FSD maps, mechanical plans and Fred Williams shop drawings. They must sit in the same place as `index.html` (repository root), not in a sub-folder.

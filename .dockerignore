@@ -1,0 +1,8 @@
+.git
+.github
+.env
+data
+authentik
+sync
+*.md
+docker-compose*.yml
