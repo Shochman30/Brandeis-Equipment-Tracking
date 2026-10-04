@@ -1,4 +1,4 @@
-# Brandeis Tracker on a Raspberry Pi – step-by-step guide
+# Brandeis Tracker on a Raspberry Pi – step-by-step guide (using MobaXterm)
 
 This guide takes you from a blank Raspberry Pi to the tracker live at
 `https://tracker.<your-domain>`, with:
@@ -15,8 +15,25 @@ phone / laptop ──https──▶ Cloudflare ──tunnel──▶ Raspberry P
                                                   └─ tracker            (the app and its saved data)
 ```
 
-Plan on about an hour the first time. Commands go in the Pi's terminal (over
-SSH) unless it says "on your computer".
+Plan on about an hour the first time. This guide uses **MobaXterm** on a
+Windows PC to connect to the Pi, copy files and open the first-time setup page.
+Every command in a grey box is typed (or pasted) into the **MobaXterm terminal
+connected to the Pi**, unless the step says otherwise.
+
+### MobaXterm basics (read once)
+
+- **Install:** download MobaXterm *Home Edition* (free) from mobaxterm.mobatek.net
+  – the "Installer edition" or "Portable edition" both work.
+- **Paste** into the terminal: **right-click** (or Shift+Insert). Ctrl+V does not paste
+  by default.
+- **Copy** from the terminal: just select the text with the mouse – it's copied.
+- **The left panel** (SFTP tab) shows the files on the Pi. You can drag files
+  from Windows into it and drag files out of it to Windows.
+- **If a session closes** (after `exit` or a reboot), click in the tab and press
+  **R** to reconnect, or double-click the saved session under **User sessions**.
+- **Don't edit the Pi's files with a Windows editor** (including double-clicking
+  them in the left panel). Use `nano` in the terminal as shown in this guide –
+  Windows editors can add Windows line endings that break the scripts.
 
 ---
 
@@ -28,7 +45,7 @@ SSH) unless it says "on your computer".
 | Storage: 32 GB+ microSD, or better a **USB SSD** | The database writes constantly; an SSD is faster and lasts much longer than an SD card. |
 | Official power supply, network cable (or Wi-Fi) | The Pi has to stay on for the site to be up. |
 | A domain name **on Cloudflare** (free plan is fine) | e.g. `example.com`. You'll use `tracker.example.com` and `auth.example.com`. |
-| A computer on the same network | To flash the card, copy the zip and do the first setup. |
+| A Windows PC with **MobaXterm**, on the same network as the Pi | To flash the card, copy the zip and do the first setup. |
 | `brandeis-tracker.zip` (or part1 + part2) | This package. |
 
 ## 2. Prepare the Raspberry Pi
@@ -43,22 +60,26 @@ SSH) unless it says "on your computer".
    - Wi-Fi (skip if using a cable), your time zone
    - **Services** tab: **Enable SSH** (password authentication)
 4. Write it, put it in the Pi, power on, wait 2–3 minutes.
-5. On your computer, open a terminal (Windows: PowerShell) and connect:
+5. **Create a MobaXterm session for the Pi** (once; it's saved for next time):
+   1. Open MobaXterm → click **Session** (top left) → **SSH**.
+   2. **Remote host:** `tracker-pi.local`
+      (if that isn't found later, use the Pi's IP address from your router, e.g. `192.168.1.50`).
+   3. Tick **Specify username** and enter `pi` (your username from step 3). Port stays `22`.
+   4. Open the **Bookmark settings** tab and set **Session name** to `Tracker Pi`.
+   5. Click **OK**. Accept the "new host key" question, then type the Pi's
+      password (nothing shows while typing – that's normal) and press Enter.
+      MobaXterm may offer to save the password; that's up to you.
 
-   ```bash
-   ssh pi@tracker-pi.local
-   ```
-
-   (If that name isn't found, look up the Pi's IP address in your router and
-   use `ssh pi@192.168.x.x`.)
-6. Update the Pi and install unzip:
+   You now have a terminal on the Pi (the prompt looks like `pi@tracker-pi:~ $`)
+   and the Pi's files in the left panel.
+6. Update the Pi and install unzip – paste this into the terminal:
 
    ```bash
    sudo apt update && sudo apt full-upgrade -y && sudo apt install -y unzip
    sudo reboot
    ```
 
-   Wait a minute, then `ssh` in again.
+   The session disconnects. Wait a minute, click in the tab and press **R** to reconnect.
 
 ## 3. Create the Cloudflare tunnel
 
@@ -87,15 +108,15 @@ The package comes either as one file, `brandeis-tracker.zip`, or as two parts,
 `brandeis-tracker-part1.zip` and `brandeis-tracker-part2.zip` (part 2 holds the
 rest of the drawings). Copy whichever you have.
 
-**On your computer**, in the folder that has the zip file(s):
+**Upload with MobaXterm:**
+1. In the terminal, type `cd ~` and press Enter, so the left panel shows your home
+   folder (`/home/pi`). (Tick **Follow terminal folder** at the bottom of the left
+   panel if it doesn't follow.)
+2. In Windows Explorer, select the zip file(s) and **drag them into the left
+   panel**. Wait for the transfer to finish (progress shows at the bottom).
+   Upload the **zip files** – don't unzip them on Windows first.
 
-```bash
-scp brandeis-tracker*.zip pi@tracker-pi.local:~
-```
-
-(Windows without `scp`: use WinSCP or FileZilla with the same address and login.)
-
-**On the Pi:**
+**Unpack them on the Pi** (terminal):
 
 ```bash
 cd ~
@@ -122,11 +143,10 @@ It will:
 - ask for your domain (e.g. `example.com`), the two names (press Enter to accept
   `tracker.example.com` / `auth.example.com`), and the **tunnel token** from step 3.
 
-If it installed Docker, log out and back in so you can use Docker without `sudo`:
+If it installed Docker, reconnect so you can use Docker without `sudo`: type
+`exit`, press **R** to reconnect, then:
 
 ```bash
-exit
-ssh pi@tracker-pi.local
 cd ~/brandeis-tracker
 ```
 
@@ -154,14 +174,25 @@ the command every minute or so; the first start on a Pi can take 5 minutes).
 
 ## 7. Create your Authentik admin account
 
-Authentik's admin page is only reachable from the Pi itself for now. Forward it
-to your computer through SSH. **On your computer**, open a *new* terminal:
+Authentik's admin page is only reachable from the Pi itself for now. Use a
+MobaXterm **SSH tunnel** to bring it to your PC:
 
-```bash
-ssh -L 9000:localhost:9000 pi@tracker-pi.local
-```
+1. In MobaXterm click **Tunneling** (top toolbar) → **New SSH tunnel**.
+2. Select **Local port forwarding** and fill in the three boxes:
 
-Leave that window open, and in your computer's browser go to:
+   | Box | Field | Value |
+   |---|---|---|
+   | My computer with MobaXterm | Forwarded port | `9000` |
+   | SSH server | SSH server / SSH login / SSH port | `tracker-pi.local` / `pi` / `22` |
+   | Remote server | Remote server / Remote port | `localhost` / `9000` |
+
+3. Click **Save**. In the tunnel list, name it `Authentik setup` and click the
+   **▶ start** button (enter the Pi's password if asked). Leave the list open.
+
+   *Alternative:* click **Start local terminal** in MobaXterm and paste
+   `ssh -L 9000:localhost:9000 pi@tracker-pi.local` – keep that tab open.
+
+Then, in your PC's browser, go to:
 
 **http://localhost:9000/if/flow/initial-setup/**
 
@@ -210,7 +241,8 @@ Open **https://tracker.example.com** on any device. You're sent to
 `auth.example.com` to sign in with the admin account, then back to the tracker,
 showing **"All changes saved"** and a **Save changes** button.
 
-You can close the `ssh -L` window from step 7 now.
+You can stop the `Authentik setup` tunnel from step 7 now (**Tunneling** → ■ stop).
+Keep it saved – it's handy if you ever need Authentik while the internet is down.
 
 ## 10. Add the people who will use it
 
@@ -261,7 +293,9 @@ docker compose cp tracker:/data ./backup-tracker-$(date +%F)
 docker compose exec -T postgresql pg_dump -U authentik authentik > backup-authentik-$(date +%F).sql
 ```
 
-Then on your computer: `scp -r pi@tracker-pi.local:~/brandeis-tracker/backup-* .`
+Then copy them to your PC: in MobaXterm's left panel open `brandeis-tracker`,
+select the `backup-…` folder and `.sql` file and **drag them to a Windows folder**
+(or right-click → **Download**).
 
 To roll the tracker back to an earlier save: copy one of the files in
 `backups/` over `/data/state.json`, and add 1 to `version` in `/data/meta.json`:
@@ -276,7 +310,8 @@ docker compose exec tracker sh -c 'python3 -c "import json;p=\"/data/meta.json\"
 
 Data saved on the Pi takes priority over the data built into `index.html`.
 To replace it with a new export (this overwrites what was saved on the Pi;
-a backup is kept):
+a backup is kept), first drag the exported `artifact.html` from Windows into the
+left panel's home folder (`/home/pi`), then:
 
 ```bash
 cd ~/brandeis-tracker
@@ -287,8 +322,8 @@ docker compose exec tracker python3 server/app.py seed --force
 
 ### Updating to a new version of this package
 
-Copy the new zip file(s) to the Pi as in step 4, then unpack over the old
-folder (your `.env` and saved data are not in the zip, so they're kept):
+Drag the new zip file(s) into `/home/pi` in MobaXterm's left panel as in step 4
+(say **yes** to overwrite the old zips), then unpack over the old folder (your `.env` and saved data are not in the zip, so they're kept):
 
 ```bash
 cd ~ && for z in brandeis-tracker*.zip; do unzip -o "$z"; done
@@ -303,7 +338,11 @@ cd brandeis-tracker && docker compose up -d --build
 |---|---|
 | `pi-setup.sh` says the system isn't 64-bit | Re-flash with **Raspberry Pi OS (64-bit)**. |
 | `authentik-server` keeps restarting; log says *Address family not supported by protocol* | IPv6 is off. In `.env` remove the `#` from the three `AUTHENTIK_LISTEN__` lines, then `docker compose up -d`. (`pi-setup.sh` normally does this for you.) |
-| `docker: permission denied` | Log out and back in after installing Docker (or run `sudo usermod -aG docker $USER` first). |
+| `docker: permission denied` | Reconnect after installing Docker (`exit`, then **R**), or run `sudo usermod -aG docker $USER` first. |
+| MobaXterm: *Network error: Connection timed out* / host not found | The Pi is off or not on the network, or `tracker-pi.local` isn't resolving – edit the session (right-click → **Edit session**) and use the Pi's IP address from your router. |
+| MobaXterm tunnel won't start: *port 9000 already in use* | Another program on your PC uses 9000. In the tunnel use forwarded port `9001` instead and open `http://localhost:9001/if/flow/initial-setup/`. |
+| `pi-setup.sh: $'\r': command not found` | A file was changed by a Windows editor. Re-upload the zip(s), unzip again (step 4), and edit only with `nano`. |
+| Pasting does nothing | Right-click in the terminal (or Shift+Insert); Ctrl+V doesn't paste by default. |
 | Pi very slow / containers killed | Not enough memory. Use a 4 GB+ Pi, close other programs, or add swap (if your Pi has `/etc/dphys-swapfile`: `sudo nano /etc/dphys-swapfile`, set `CONF_SWAPSIZE=2048`, then `sudo systemctl restart dphys-swapfile`; check with `free -h`). |
 | Cloudflare shows error **1033** | The tunnel isn't connected: `docker compose logs cloudflared`. Usually a wrong/missing `CLOUDFLARE_TUNNEL_TOKEN` in `.env`; fix it and `docker compose up -d cloudflared`. |
 | Cloudflare shows **502 Bad Gateway** | Authentik isn't ready yet (wait), or the hostname's service isn't exactly `http://authentik-server:9000`. |
