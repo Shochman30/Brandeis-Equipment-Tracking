@@ -1,5 +1,7 @@
 # Running the tracker on Linux with Docker, Authentik and a Cloudflare tunnel
 
+*Setting up on a Raspberry Pi? Follow [README-RASPBERRY-PI.md](README-RASPBERRY-PI.md) instead – it's the same setup, step by step.*
+
 This runs the tracker as a real shared web app: everyone signs in with their own
 account, edits are saved on the server so everybody sees the same copy, and the
 Change history tab shows who made each change.
@@ -55,7 +57,7 @@ sed -i "s|^AUTHENTIK_SECRET_KEY=.*|AUTHENTIK_SECRET_KEY=$(openssl rand -hex 50)|
 nano .env     # set TRACKER_HOST and AUTHENTIK_HOST to your two names
 ```
 
-Leave `CLOUDFLARE_TUNNEL_TOKEN` for step 3. `.env` holds secrets – it is in
+Leave `CLOUDFLARE_TUNNEL_TOKEN` empty until step 3. `.env` holds secrets – it is in
 `.gitignore`, never commit it.
 
 ## 2. Start everything except the tunnel, and create the Authentik admin

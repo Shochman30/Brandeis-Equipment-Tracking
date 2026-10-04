@@ -11,7 +11,6 @@
 services:
   tracker:
     build: .
-    image: brandeis-tracker:latest
     restart: unless-stopped
     environment:
       AUTH_MODE: authentik
@@ -86,7 +85,8 @@ services:
     command: tunnel --no-autoupdate run
     restart: unless-stopped
     environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+      # Empty until step 3 of the setup; only this container needs it.
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
     depends_on: [authentik-server]
     networks: [backend]
 
